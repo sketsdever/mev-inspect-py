@@ -7,8 +7,28 @@ from mev_inspect.schemas.classified_traces import (
     ClassifiedTrace,
     DecodedCallTrace,
 )
-from mev_inspect.schemas.transfers import ERC20Transfer, EthTransfer, TransferGeneric
+from mev_inspect.schemas.transfers import (
+    ERC20Transfer,
+    EthTransfer,
+    Transfer,
+    TransferGeneric,
+)
 from mev_inspect.traces import is_child_trace_address, get_child_traces
+
+
+def get_transfers(traces: List[ClassifiedTrace]) -> List[Transfer]:
+    transfers: List[Transfer] = []
+
+    for trace in traces:
+        if trace.value is not None and trace.value > 0:
+            transfers.append(EthTransfer.from_trace(trace))
+
+        if isinstance(trace, DecodedCallTrace):
+            transfer = get_erc20_transfer(trace)
+            if transfer is not None:
+                transfers.append(transfer)
+
+    return transfers
 
 
 def get_eth_transfers(traces: List[ClassifiedTrace]) -> List[EthTransfer]:
@@ -17,18 +37,6 @@ def get_eth_transfers(traces: List[ClassifiedTrace]) -> List[EthTransfer]:
     for trace in traces:
         if trace.value is not None and trace.value > 0:
             transfers.append(EthTransfer.from_trace(trace))
-
-    return transfers
-
-
-def get_transfers(traces: List[ClassifiedTrace]) -> List[ERC20Transfer]:
-    transfers = []
-
-    for trace in traces:
-        if isinstance(trace, DecodedCallTrace):
-            transfer = get_erc20_transfer(trace)
-            if transfer is not None:
-                transfers.append(transfer)
 
     return transfers
 
