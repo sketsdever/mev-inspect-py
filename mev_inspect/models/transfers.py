@@ -12,6 +12,6 @@ class TransferModel(Base):
     protocol = Column(String, nullable=True)
     from_address = Column(String, nullable=False)
     to_address = Column(String, nullable=False)
-    token_address = Column(String, nullable=False)
+    token_address = Column(String, nullable=True)
     amount = Column(Numeric, nullable=False)
     error = Column(String, nullable=True)
