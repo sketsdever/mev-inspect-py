@@ -70,7 +70,7 @@ def inspect_block(
         delete_transfers_for_block(db_session, block_number)
         write_transfers(db_session, transfers)
 
-    swaps = get_swaps(classified_traces)
+    swaps = get_swaps(classified_traces, transfers)
     logger.info(f"Found {len(swaps)} swaps")
 
     if should_write_swaps:

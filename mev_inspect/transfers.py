@@ -1,9 +1,9 @@
+from itertools import groupby
 from typing import Dict, List, Optional, Sequence
 
 from mev_inspect.classifiers.specs import get_classifier
 from mev_inspect.schemas.classifiers import TransferClassifier
 from mev_inspect.schemas.classified_traces import (
-    Classification,
     ClassifiedTrace,
     DecodedCallTrace,
 )
@@ -13,7 +13,7 @@ from mev_inspect.schemas.transfers import (
     Transfer,
     TransferGeneric,
 )
-from mev_inspect.traces import is_child_trace_address, get_child_traces
+from mev_inspect.traces import is_child_trace_address
 
 
 def get_transfers(traces: List[ClassifiedTrace]) -> List[Transfer]:
@@ -24,7 +24,7 @@ def get_transfers(traces: List[ClassifiedTrace]) -> List[Transfer]:
             transfers.append(EthTransfer.from_trace(trace))
 
         if isinstance(trace, DecodedCallTrace):
-            transfer = get_erc20_transfer(trace)
+            transfer = _get_erc20_transfer(trace)
             if transfer is not None:
                 transfers.append(transfer)
 
@@ -41,7 +41,7 @@ def get_eth_transfers(traces: List[ClassifiedTrace]) -> List[EthTransfer]:
     return transfers
 
 
-def get_erc20_transfer(trace: DecodedCallTrace) -> Optional[ERC20Transfer]:
+def _get_erc20_transfer(trace: DecodedCallTrace) -> Optional[ERC20Transfer]:
     if not isinstance(trace, DecodedCallTrace):
         return None
 
@@ -50,24 +50,6 @@ def get_erc20_transfer(trace: DecodedCallTrace) -> Optional[ERC20Transfer]:
         return classifier.get_transfer(trace)
 
     return None
-
-
-def get_child_transfers(
-    transaction_hash: str,
-    parent_trace_address: List[int],
-    traces: List[ClassifiedTrace],
-) -> List[ERC20Transfer]:
-    child_transfers = []
-
-    for child_trace in get_child_traces(transaction_hash, parent_trace_address, traces):
-        if child_trace.classification == Classification.transfer and isinstance(
-            child_trace, DecodedCallTrace
-        ):
-            transfer = get_erc20_transfer(child_trace)
-            if transfer is not None:
-                child_transfers.append(transfer)
-
-    return child_transfers
 
 
 def filter_transfers(
@@ -90,8 +72,8 @@ def filter_transfers(
 
 
 def remove_child_transfers_of_transfers(
-    transfers: List[ERC20Transfer],
-) -> List[ERC20Transfer]:
+    transfers: List[Transfer],
+) -> List[Transfer]:
     updated_transfers = []
     transfer_addresses_by_transaction: Dict[str, List[List[int]]] = {}
 
@@ -113,3 +95,16 @@ def remove_child_transfers_of_transfers(
         ] = existing_addresses + [transfer.trace_address]
 
     return updated_transfers
+
+
+def get_transfers_by_transaction_hash(
+    transfers: List[Transfer],
+) -> Dict[str, List[Transfer]]:
+    get_transaction_hash = lambda transfer: transfer.transaction_hash
+    return {
+        transaction_hash: list(transfers)
+        for transaction_hash, transfers in groupby(
+            sorted(transfers, key=get_transaction_hash),
+            key=get_transaction_hash,
+        )
+    }

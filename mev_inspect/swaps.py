@@ -8,46 +8,63 @@ from mev_inspect.schemas.classified_traces import (
 )
 from mev_inspect.schemas.classifiers import SwapClassifier
 from mev_inspect.schemas.swaps import Swap
-from mev_inspect.schemas.transfers import ERC20Transfer
-from mev_inspect.traces import get_traces_by_transaction_hash
+from mev_inspect.schemas.transfers import ERC20Transfer, Transfer
+from mev_inspect.traces import (
+    get_traces_by_transaction_hash,
+    is_child_trace_address,
+)
 from mev_inspect.transfers import (
-    get_child_transfers,
-    get_erc20_transfer,
+    get_transfers_by_transaction_hash,
     filter_transfers,
     remove_child_transfers_of_transfers,
 )
 
 
-def get_swaps(traces: List[ClassifiedTrace]) -> List[Swap]:
+def get_swaps(
+    traces: List[ClassifiedTrace],
+    transfers: List[Transfer],
+) -> List[Swap]:
     swaps = []
+    traces_by_transaction = get_traces_by_transaction_hash(traces)
+    transfers_by_transaction = get_transfers_by_transaction_hash(transfers)
 
-    for _, transaction_traces in get_traces_by_transaction_hash(traces).items():
-        swaps += _get_swaps_for_transaction(list(transaction_traces))
+    for hash, transaction_traces in traces_by_transaction.items():
+        transaction_transfers = transfers_by_transaction.get(hash, [])
+        swaps += _get_swaps_for_transaction(
+            transaction_traces,
+            transaction_transfers,
+        )
 
     return swaps
 
 
-def _get_swaps_for_transaction(traces: List[ClassifiedTrace]) -> List[Swap]:
+def _get_swaps_for_transaction(
+    traces: List[ClassifiedTrace],
+    transfers: List[Transfer],
+) -> List[Swap]:
     ordered_traces = list(sorted(traces, key=lambda t: t.trace_address))
 
     swaps: List[Swap] = []
-    prior_transfers: List[ERC20Transfer] = []
 
     for trace in ordered_traces:
-        if not isinstance(trace, DecodedCallTrace):
-            continue
+        if (
+            isinstance(trace, DecodedCallTrace)
+            and trace.classification == Classification.swap
+        ):
+            prior_transfers = [
+                transfer
+                for transfer in transfers
+                if transfer.trace_address < trace.trace_address
+            ]
 
-        elif trace.classification == Classification.transfer:
-            transfer = get_erc20_transfer(trace)
-            if transfer is not None:
-                prior_transfers.append(transfer)
-
-        elif trace.classification == Classification.swap:
-            child_transfers = get_child_transfers(
-                trace.transaction_hash,
-                trace.trace_address,
-                traces,
-            )
+            child_transfers = [
+                transfer
+                for transfer in transfers
+                if is_child_trace_address(
+                    transfer.trace_address,
+                    trace.trace_address,
+                )
+            ]
 
             swap = _parse_swap(
                 trace,
@@ -63,8 +80,8 @@ def _get_swaps_for_transaction(traces: List[ClassifiedTrace]) -> List[Swap]:
 
 def _parse_swap(
     trace: DecodedCallTrace,
-    prior_transfers: List[ERC20Transfer],
-    child_transfers: List[ERC20Transfer],
+    prior_transfers: List[Transfer],
+    child_transfers: List[Transfer],
 ) -> Optional[Swap]:
     pool_address = trace.to_address
     recipient_address = _get_recipient_address(trace)
@@ -98,12 +115,19 @@ def _parse_swap(
         pool_address=pool_address,
         from_address=transfer_in.from_address,
         to_address=transfer_out.to_address,
-        token_in_address=transfer_in.token_address,
+        token_in_address=_get_token_address_or_none(transfer_in),
         token_in_amount=transfer_in.amount,
-        token_out_address=transfer_out.token_address,
+        token_out_address=_get_token_address_or_none(transfer_out),
         token_out_amount=transfer_out.amount,
         error=trace.error,
     )
+
+
+def _get_token_address_or_none(transfer: Transfer) -> Optional[str]:
+    if isinstance(transfer, ERC20Transfer):
+        return transfer.token_address
+
+    return None
 
 
 def _get_recipient_address(trace: DecodedCallTrace) -> Optional[str]:

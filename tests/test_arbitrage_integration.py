@@ -1,6 +1,7 @@
 from mev_inspect.arbitrages import get_arbitrages
 from mev_inspect.classifiers.trace import TraceClassifier
 from mev_inspect.swaps import get_swaps
+from mev_inspect.transfers import get_transfers
 
 from .utils import load_test_block
 
@@ -11,8 +12,10 @@ def test_arbitrage_real_block():
     trace_clasifier = TraceClassifier()
     classified_traces = trace_clasifier.classify(block.traces)
 
-    swaps = get_swaps(classified_traces)
-    assert len(swaps) == 51
+    transfers = get_transfers(classified_traces)
+
+    swaps = get_swaps(classified_traces, transfers)
+    assert len(swaps) == 49
 
     arbitrages = get_arbitrages(list(swaps))
     assert len(arbitrages) == 1

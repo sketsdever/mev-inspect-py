@@ -5,6 +5,7 @@ from mev_inspect.classifiers.specs.uniswap import (
     UNISWAP_V3_POOL_ABI_NAME,
 )
 from mev_inspect.schemas.classified_traces import Protocol
+from mev_inspect.transfers import get_transfers
 
 from .helpers import (
     make_unknown_trace,
@@ -141,7 +142,8 @@ def test_swaps(
         ),
     ]
 
-    swaps = get_swaps(traces)
+    transfers = get_transfers(traces)
+    swaps = get_swaps(traces, transfers)
 
     assert len(swaps) == 3
 
