@@ -33,7 +33,7 @@ def get_eth_transfers(traces: List[ClassifiedTrace]) -> List[Transfer]:
 
 def get_transfer(trace: ClassifiedTrace) -> Optional[Transfer]:
     if trace.value is not None and trace.value > 0:
-        return _get_eth_transfer(trace)
+        return build_eth_transfer(trace)
 
     if isinstance(trace, DecodedCallTrace):
         return _get_erc20_transfer(trace)
@@ -41,7 +41,7 @@ def get_transfer(trace: ClassifiedTrace) -> Optional[Transfer]:
     return None
 
 
-def _get_eth_transfer(trace: ClassifiedTrace) -> Transfer:
+def build_eth_transfer(trace: ClassifiedTrace) -> Transfer:
     return Transfer(
         block_number=trace.block_number,
         transaction_hash=trace.transaction_hash,
