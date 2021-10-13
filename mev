@@ -4,6 +4,10 @@ set -e
 
 DB_NAME=mev_inspect
 
+function create_if_not_exists(){
+    kubectl create -f $1 --dry-run=client -o yaml | kubectl apply -f -
+}
+
 function get_kube_db_secret(){
     kubectl get secrets mev-inspect-db-credentials -o jsonpath="{.data.$1}" | base64 --decode
 }
@@ -19,7 +23,18 @@ function db(){
         -- $DB_NAME --host=$host --user=$username
 }
 
+function backfill(){
+    start_block=$1
+    end_block=$2
+}
+
 case "$1" in
+  backfill)
+        start_block=$2
+        end_block=$3
+        echo "Running backfill from block $start_block to $end_block"
+        backfill $start_block $end_block
+	;;
   db)
         echo "Connecting to $DB_NAME"
         db
