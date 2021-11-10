@@ -43,10 +43,17 @@ def fetch_all_underlying_markets(w3: Web3, protocol: Protocol) -> Dict[str, str]
     return token_mapping
 
 
+def fetch_token_symbol(w3: Web3, token_address: str) -> str:
+    erc20_abi = get_raw_abi("ERC20", None)
+    token_instance = w3.eth.contract(
+        address=Web3.toChecksumAddress(token_address), abi=erc20_abi
+    )
+    symbol = token_instance.functions.symbol().call()
+    return symbol
+
+
 def get_compound_liquidations(
-    traces: List[ClassifiedTrace],
-    collateral_by_c_token_address: Dict[str, str],
-    collateral_by_cr_token_address: Dict[str, str],
+    traces: List[ClassifiedTrace], c_token_underlying_markets: Dict[str, str]
 ) -> List[Liquidation]:
 
     """Inspect list of classified traces and identify liquidation"""
@@ -67,16 +74,11 @@ def get_compound_liquidations(
                 trace.transaction_hash, trace.trace_address, traces
             )
             seize_trace = _get_seize_call(child_traces)
-            underlying_markets = {}
-            if trace.protocol == Protocol.compound_v2:
-                underlying_markets = collateral_by_c_token_address
-            elif trace.protocol == Protocol.cream:
-                underlying_markets = collateral_by_cr_token_address
 
             if (
                 seize_trace is not None
                 and seize_trace.inputs is not None
-                and len(underlying_markets) != 0
+                and len(c_token_underlying_markets) != 0
             ):
                 c_token_collateral = trace.inputs["cTokenCollateral"]
                 if trace.abi_name == "CEther":
@@ -101,7 +103,7 @@ def get_compound_liquidations(
                     liquidations.append(
                         Liquidation(
                             liquidated_user=trace.inputs["borrower"],
-                            collateral_token_address=underlying_markets[
+                            collateral_token_address=c_token_underlying_markets[
                                 c_token_address
                             ],
                             debt_token_address=c_token_collateral,

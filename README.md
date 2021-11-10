@@ -60,6 +60,11 @@ On first startup, you'll need to apply database migrations with:
 ./mev exec alembic upgrade head
 ```
 
+To inspect liquidations without additional network calls, backfill cTokens and their underlying (for Compound and Cream)
+
+```
+./mev backfill-lending-markets   
+```
 ## Usage
 
 ### Inspect a single block

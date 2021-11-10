@@ -15,3 +15,9 @@ class Liquidation(BaseModel):
     transaction_hash: str
     trace_address: List[int]
     block_number: str
+
+
+class CTokenMarket(BaseModel):
+    ctoken_address: str
+    ctoken_symbol: str
+    underlying_token_address: str

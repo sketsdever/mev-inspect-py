@@ -30,6 +30,7 @@ from mev_inspect.miner_payments import get_miner_payments
 from mev_inspect.swaps import get_swaps
 from mev_inspect.transfers import get_transfers
 from mev_inspect.liquidations import get_liquidations
+from mev_inspect.utils import check_for_updates
 
 
 logger = logging.getLogger(__name__)
@@ -50,7 +51,6 @@ async def inspect_block(
         block_number,
         trace_db_session,
     )
-
     logger.info(f"Block: {block_number} -- Total traces: {len(block.traces)}")
 
     total_transactions = len(
@@ -59,6 +59,8 @@ async def inspect_block(
     logger.info(f"Block: {block_number} -- Total transactions: {total_transactions}")
 
     classified_traces = trace_clasifier.classify(block.traces)
+    check_for_updates(classified_traces, w3, inspect_db_session)
+
     logger.info(
         f"Block: {block_number} -- Returned {len(classified_traces)} classified traces"
     )
@@ -85,7 +87,7 @@ async def inspect_block(
     delete_arbitrages_for_block(inspect_db_session, block_number)
     write_arbitrages(inspect_db_session, arbitrages)
 
-    liquidations = get_liquidations(classified_traces)
+    liquidations = get_liquidations(inspect_db_session, classified_traces)
     logger.info(f"Block: {block_number} -- Found {len(liquidations)} liquidations")
 
     delete_liquidations_for_block(inspect_db_session, block_number)

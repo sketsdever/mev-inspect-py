@@ -5,6 +5,7 @@ from mev_inspect.schemas.classifiers import (
     ClassifierSpec,
     LiquidationClassifier,
     SeizeClassifier,
+    NewMarketClassifier,
 )
 
 COMPOUND_V2_CETH_SPEC = ClassifierSpec(
@@ -15,6 +16,13 @@ COMPOUND_V2_CETH_SPEC = ClassifierSpec(
         "liquidateBorrow(address,address)": LiquidationClassifier,
         "seize(address,address,uint256)": SeizeClassifier,
     },
+)
+
+COMPOUND_V2_COMPTROLLER_SPEC = ClassifierSpec(
+    abi_name="Comptroller",
+    protocol=Protocol.compound_v2,
+    valid_contract_addresses=["0x3d9819210a31b4961b30ef54be2aed79b9c9cd3b"],
+    classifiers={"_supportMarket(address)": NewMarketClassifier},
 )
 
 CREAM_CETH_SPEC = ClassifierSpec(
@@ -160,6 +168,7 @@ CREAM_CTOKEN_SPEC = ClassifierSpec(
 COMPOUND_CLASSIFIER_SPECS = [
     COMPOUND_V2_CETH_SPEC,
     COMPOUND_V2_CTOKEN_SPEC,
+    COMPOUND_V2_COMPTROLLER_SPEC,
     CREAM_CETH_SPEC,
     CREAM_CTOKEN_SPEC,
 ]

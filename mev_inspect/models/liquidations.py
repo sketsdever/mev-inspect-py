@@ -17,3 +17,10 @@ class LiquidationModel(Base):
     transaction_hash = Column(String, primary_key=True)
     trace_address = Column(ARRAY(Integer), primary_key=True)
     block_number = Column(Numeric, nullable=False)
+
+
+class CTokenModel(Base):
+    __tablename__ = "ctoken_underlying"
+    ctoken_address = Column(String, nullable=False, primary_key=True)
+    ctoken_symbol = Column(String, nullable=False)
+    underlying_token_address = Column(String, nullable=False)

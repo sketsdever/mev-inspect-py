@@ -35,6 +35,10 @@ case "$1" in
         echo "Backfilling from $start_block_number to $end_block_number with $n_workers workers"
         python backfill.py $start_block_number $end_block_number $n_workers
 	;;
+  backfill-lending-markets)
+        echo "Backfilling cTokens and underlying tokens data"
+        kubectl exec -ti deploy/mev-inspect -- python backfill-lending-markets.py
+  ;;
   inspect)
         block_number=$2
         echo "Inspecting block $block_number"

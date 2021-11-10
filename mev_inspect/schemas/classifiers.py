@@ -42,6 +42,12 @@ class LiquidationClassifier(Classifier):
         return Classification.liquidate
 
 
+class NewMarketClassifier(Classifier):
+    @staticmethod
+    def get_classification() -> Classification:
+        return Classification.new_market
+
+
 class SeizeClassifier(Classifier):
     @staticmethod
     def get_classification() -> Classification:

@@ -31,6 +31,7 @@ class Classification(Enum):
     transfer = "transfer"
     liquidate = "liquidate"
     seize = "seize"
+    new_market = "new_market"
 
 
 class Protocol(Enum):
